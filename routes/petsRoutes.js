@@ -140,13 +140,13 @@ router.put('/update/:id', upload.single('image'), async (req, res) => {
       return res.status(404).json({ message: 'Animal non trouvé' });
     }
 
-    // Vérification des modifications
+    // Mettre à jour les informations de l'animal (sans toucher à l'image si elle n'est pas modifiée)
     pet.name = name || pet.name;
     pet.birthDate = birthDate || pet.birthDate;
     pet.type = type || pet.type;
     pet.color = color || pet.color;
 
-    // Comparaison de la date sans l'heure (on garde uniquement YYYY-MM-DD)
+    // Comparer la date sans l'heure
     const today = new Date();
     const todayDate = today.toISOString().split('T')[0]; // Format YYYY-MM-DD
     const lastDataEntry = pet.data[pet.data.length - 1];
@@ -157,38 +157,47 @@ router.put('/update/:id', upload.single('image'), async (req, res) => {
     if (lastDataEntry) {
       const lastDataDate = new Date(lastDataEntry.date).toISOString().split('T')[0]; // Format YYYY-MM-DD
 
-      // Si la date est différente, ou si le poids a changé, on ajoute une nouvelle entrée
+      // Vérification si la date ou le poids ont changé
       if (lastDataDate !== todayDate) {
         dateChanged = true;
       }
 
-      // Vérification si le poids a changé
       if (parseFloat(weight) !== lastDataEntry.weight) {
         weightChanged = true;
       }
     }
 
-    // Si la date ou le poids a changé, on ajoute une nouvelle entrée dans le tableau `data`
+    // Si la date ou le poids a changé, on ajoute une nouvelle entrée dans la liste de données
     if (dateChanged || weightChanged) {
       const newWeight = {
-        date: todayDate, // Nouvelle date sans l'heure
-        weight: parseFloat(weight), // Poids actuel
+        date: todayDate,
+        weight: parseFloat(weight),
       };
-      pet.data.push(newWeight); // Ajouter la nouvelle entrée
+      pet.data.push(newWeight);
     }
 
-    // Si une nouvelle image est envoyée, la traiter
+    // Vérification de l'image
     if (req.file) {
+      // Supprimer l'ancienne image si elle existe
+      if (pet.image) {
+        const oldImagePath = path.join(__dirname, '../uploads/pets', pet.image);
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath); // Supprimer l'image précédente
+        }
+      }
+
+      // Traiter la nouvelle image
       const originalImagePath = path.join(__dirname, '../uploads/pets', req.file.filename);
       const optimizedImagePath = getImagePath(`${Date.now()}.webp`);
 
+      // Optimisation de l'image
       await sharp(originalImagePath)
         .resize(800)
         .webp({ quality: 80 })
         .toFile(optimizedImagePath);
 
       fs.unlinkSync(originalImagePath); // Supprimer l'image originale
-      pet.image = path.basename(optimizedImagePath); // Mettre à jour l'URL de l'image optimisée
+      pet.image = path.basename(optimizedImagePath); // Enregistrer le nouveau nom de l'image optimisée
     }
 
     const updatedPet = await pet.save();
