@@ -43,8 +43,7 @@ router.post('/add', authMiddleware, upload.single('image'), async (req, res) => 
 
     // Si une image est téléchargée, la traiter avec Sharp
     if (req.file) {
-      const originalImagePath = path.join(__dirname, '../uploads/pets', req.file.filename);
-      const optimizedImagePath = getImagePath(`${Date.now()}.webp`);
+      const optimizedImagePath = getImagePath(`${pet.name}-${Date.now()}.webp`);
 
       // Utilisation de Sharp pour redimensionner et convertir l'image
       await sharp(req.file.path)
@@ -95,25 +94,36 @@ router.delete('/remove/:id', authMiddleware, async (req, res) => {
   try {
     const userId = req.auth.userId;
 
-    const pet = await Pet.findById(petId, { user: userId });
+    // Trouver l'animal par son ID et vérifier qu'il appartient à l'utilisateur
+    const pet = await Pet.findOne({ _id: petId, user: userId });
     if (!pet) {
       return res.status(404).json({ message: 'Animal non trouvé' });
     }
 
+    // Vérification et suppression de l'image
     if (pet.image) {
-      const imagePath = getImagePath(pet.image);
+      const imagePath = getImagePath(pet.image); // Obtenir le chemin de l'image
+
       if (fs.existsSync(imagePath)) {
+        // Si le fichier existe, suppression en cours
         fs.unlinkSync(imagePath);
+      } else {
+        console.warn('Fichier introuvable, rien à supprimer :', imagePath);
       }
+    } else {
+      console.warn('Aucune image associée à cet animal.');
     }
 
+    // Supprimer l'animal de la base de données
     await Pet.findByIdAndDelete(petId);
+
     res.status(200).json({ message: 'Animal supprimé avec succès' });
   } catch (error) {
     console.error('Erreur lors de la suppression de l\'animal:', error);
     res.status(500).json({ message: 'Erreur lors de la suppression de l\'animal' });
   }
 });
+
 
 // Route pour mettre à jour un animal
 router.put('/update/:id', authMiddleware, upload.single('image'), async (req, res) => {
@@ -166,8 +176,15 @@ router.put('/update/:id', authMiddleware, upload.single('image'), async (req, re
 
     // Traitement de l'image
     if (req.file) {
+
+      const oldImagePath = getImagePath(pet.image);
+      // Vérifiez si l'image précédente existe, puis supprimez-la
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlinkSync(oldImagePath);
+      }
+
       const originalImagePath = req.file.path;
-      const optimizedImagePath = getImagePath(`${Date.now()}.webp`);
+      const optimizedImagePath = getImagePath(`${pet.name}-${Date.now()}.webp`);
 
       await sharp(originalImagePath)
         .resize(800)
