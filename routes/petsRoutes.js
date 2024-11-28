@@ -1,45 +1,12 @@
 const express = require('express');
-const multer = require('multer');
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 const Pet = require('../models/Pet');
 const authMiddleware = require('../middleware/authMiddleware'); // Middleware d'authentification
+const upload = require('../middleware/upload')
 const router = express.Router();
 
-// Configuration de multer pour gérer l'upload des images
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = 'uploads/pets'; // Dossier de stockage des images
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true }); // Crée le dossier si inexistant
-    }
-    cb(null, uploadDir); // Stockage dans le dossier 'uploads/pets'
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const fileName = `pet_${Date.now()}${ext}`; // Nom unique basé sur le timestamp
-    cb(null, fileName);
-  }
-});
-
-// Filtrage des fichiers (accepte uniquement les images)
-const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
-    cb(null, true); // Si c'est une image, on l'accepte
-  } else {
-    cb(new Error('Seuls les fichiers image sont autorisés'), false); // Refuse autres types de fichiers
-  }
-};
-
-// Initialiser multer
-const upload = multer({
-  storage,
-  fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // Limite de taille de 5MB
-});
-
-// Helper : obtenir le chemin complet de l'image
 const getImagePath = (fileName) => path.join(__dirname, '../uploads/pets/optimized', fileName);
 
 // Route pour ajouter un animal
