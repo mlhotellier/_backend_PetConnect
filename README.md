@@ -18,7 +18,7 @@ Bienvenue dans le backend de l'application **My Pet Diary**. Ce backend fournit 
 
 1. Clonez le projet depuis le dépôt Git :
    ```bash
-   git clone https://votre-dépôt-url.git
+   git clone https://github.com/mlhotellier/_backend_my-pet-diary.git
    ```
 2. Accédez au dossier du projet :
     ```bash

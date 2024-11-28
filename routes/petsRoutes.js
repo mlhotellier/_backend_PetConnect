@@ -4,21 +4,21 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 const Pet = require('../models/Pet');
-const User = require('../models/User');
+const authMiddleware = require('../middleware/authMiddleware'); // Middleware d'authentification
 const router = express.Router();
 
-// Configuration de multer pour gérer l'upload d'images
+// Configuration de multer pour gérer l'upload des images
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = 'uploads/pets'; // Répertoire de stockage des images
+    const uploadDir = 'uploads/pets'; // Dossier de stockage des images
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true }); // Crée le dossier si inexistant
     }
-    cb(null, uploadDir); // Stockage dans le répertoire 'uploads/pets'
+    cb(null, uploadDir); // Stockage dans le dossier 'uploads/pets'
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
-    const fileName = `pet_${Date.now()}${ext}`; // Nom unique basé sur timestamp
+    const fileName = `pet_${Date.now()}${ext}`; // Nom unique basé sur le timestamp
     cb(null, fileName);
   }
 });
@@ -36,31 +36,33 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // Limite de taille à 5MB
+  limits: { fileSize: 5 * 1024 * 1024 } // Limite de taille de 5MB
 });
 
 // Helper : obtenir le chemin complet de l'image
 const getImagePath = (fileName) => path.join(__dirname, '../uploads/pets/optimized', fileName);
 
 // Route pour ajouter un animal
-router.post('/add', upload.single('image'), async (req, res) => {
-  const { name, birthDate, type, color, weight, userId } = req.body;
+router.post('/add', authMiddleware, upload.single('image'), async (req, res) => {
+  const { name, birthDate, type, color, weight } = req.body;
+  
+  // Vérifier si les informations sont présentes
+  if (!name || !birthDate || !type || !color || !weight) {
+    return res.status(400).json({ message: 'Toutes les informations de l\'animal sont requises' });
+  }
 
+  // Utilisation de l'ID utilisateur depuis le token (authMiddleware)
+  const userId = req.auth.userId;
   if (!userId) {
     return res.status(400).json({ message: 'L\'ID utilisateur est requis' });
   }
 
-  // Valider le poids (doit être un nombre positif)
+  // Vérification du poids
   if (isNaN(weight) || parseFloat(weight) <= 0) {
     return res.status(400).json({ message: 'Le poids doit être un nombre valide et supérieur à zéro.' });
   }
 
   try {
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(400).json({ message: 'Utilisateur non trouvé' });
-    }
-
     // Créer un nouvel animal
     const pet = new Pet({
       name,
@@ -68,36 +70,50 @@ router.post('/add', upload.single('image'), async (req, res) => {
       type,
       color,
       data: [{ date: new Date().toISOString(), weight: parseFloat(weight) }],
-      user: userId,
+      user: userId, // Lier l'animal à l'utilisateur
     });
 
+    // Si une image est téléchargée, la traiter avec Sharp
     if (req.file) {
       const originalImagePath = path.join(__dirname, '../uploads/pets', req.file.filename);
       const optimizedImagePath = getImagePath(`${Date.now()}.webp`);
 
-      // Optimisation de l'image
-      await sharp(originalImagePath)
+      // Utilisation de Sharp pour redimensionner et convertir l'image
+      await sharp(req.file.path)
         .resize(800)
         .webp({ quality: 80 })
-        .toFile(optimizedImagePath);
+        .toFile(optimizedImagePath); // Sauvegarder l'image optimisée
 
-      fs.unlinkSync(originalImagePath); // Supprimer l'image originale
-      pet.image = path.basename(optimizedImagePath); // Stocker uniquement le nom du fichier optimisé
+      // Supprimer l'image originale
+      fs.unlinkSync(req.file.path);
+
+      // Mettre à jour le modèle Pet avec le nom de l'image optimisée
+      pet.image = path.basename(optimizedImagePath); // Stocker le nom de l'image optimisée
     }
 
+    // Sauvegarder l'animal dans la base de données
     const savedPet = await pet.save();
-    res.status(201).json(savedPet);
+    res.status(201).json(savedPet); // Retourner l'animal ajouté
   } catch (error) {
     console.error('Erreur lors de l\'ajout de l\'animal:', error);
     res.status(500).json({ message: 'Erreur lors de l\'ajout de l\'animal' });
   }
 });
 
-// Route pour récupérer tous les animaux
-router.get('/', async (req, res) => {
+// Route pour récupérer tous ses animaux de l'utilisateur
+router.get('/', authMiddleware, async (req, res) => {
   try {
-    const pets = await Pet.find();
-    res.status(200).json(pets);
+    const userId = req.auth.userId;  // Récupérer l'ID de l'utilisateur à partir du middleware
+
+    // Trouver les animaux appartenant à l'utilisateur authentifié
+    const pets = await Pet.find({ user: userId });
+
+    // Vérification si l'utilisateur a des animaux
+    if (!pets || pets.length === 0) {
+      return res.status(404).json({ message: 'Aucun animal trouvé pour cet utilisateur.' });
+    }
+
+    res.status(200).json(pets); // Retourner les animaux
   } catch (error) {
     console.error('Erreur lors de la récupération des animaux:', error);
     res.status(500).json({ message: 'Erreur lors de la récupération des animaux' });
@@ -105,11 +121,13 @@ router.get('/', async (req, res) => {
 });
 
 // Route pour supprimer un animal
-router.delete('/remove/:id', async (req, res) => {
+router.delete('/remove/:id', authMiddleware, async (req, res) => {
   const petId = req.params.id;
 
   try {
-    const pet = await Pet.findById(petId);
+    const userId = req.auth.userId;
+
+    const pet = await Pet.findById(petId, { user: userId });
     if (!pet) {
       return res.status(404).json({ message: 'Animal non trouvé' });
     }
@@ -130,17 +148,20 @@ router.delete('/remove/:id', async (req, res) => {
 });
 
 // Route pour mettre à jour un animal
-router.put('/update/:id', upload.single('image'), async (req, res) => {
-  const { id } = req.params;
+router.put('/update/:id', authMiddleware, upload.single('image'), async (req, res) => {
+  const { id } = req.params;  // Récupérer l'ID du paramètre de la route
   const { name, birthDate, type, color, weight } = req.body;
 
   try {
-    const pet = await Pet.findById(id);
+    const userId = req.auth.userId;
+
+    // Trouver l'animal par son ID et vérifier si cet animal appartient à l'utilisateur
+    const pet = await Pet.findOne({ _id: id, user: userId });
     if (!pet) {
       return res.status(404).json({ message: 'Animal non trouvé' });
     }
 
-    // Vérification des modifications
+    // Vérifier les champs à mettre à jour
     pet.name = name || pet.name;
     pet.birthDate = birthDate || pet.birthDate;
     pet.type = type || pet.type;
@@ -157,55 +178,56 @@ router.put('/update/:id', upload.single('image'), async (req, res) => {
     if (lastDataEntry) {
       const lastDataDate = new Date(lastDataEntry.date).toISOString().split('T')[0]; // Format YYYY-MM-DD
 
-      // Si la date est différente, ou si le poids a changé, on ajoute une nouvelle entrée
       if (lastDataDate !== todayDate) {
         dateChanged = true;
       }
 
-      // Vérification si le poids a changé
       if (parseFloat(weight) !== lastDataEntry.weight) {
         weightChanged = true;
       }
     }
 
-    // Si la date ou le poids a changé, on ajoute une nouvelle entrée dans le tableau `data`
+    // Si la date ou le poids a changé, on ajoute une nouvelle entrée
     if (dateChanged || weightChanged) {
       const newWeight = {
-        date: todayDate, // Nouvelle date sans l'heure
-        weight: parseFloat(weight), // Poids actuel
+        date: todayDate,
+        weight: parseFloat(weight),
       };
-      pet.data.push(newWeight); // Ajouter la nouvelle entrée
+      pet.data.push(newWeight);
     }
 
-    // Si une nouvelle image est envoyée, la traiter
+    // Traitement de l'image
     if (req.file) {
-      const originalImagePath = path.join(__dirname, '../uploads/pets', req.file.filename);
+      const originalImagePath = req.file.path;
       const optimizedImagePath = getImagePath(`${Date.now()}.webp`);
 
       await sharp(originalImagePath)
         .resize(800)
         .webp({ quality: 80 })
-        .toFile(optimizedImagePath);
+        .toFile(optimizedImagePath); // Sauvegarder l'image optimisée
 
-      fs.unlinkSync(originalImagePath); // Supprimer l'image originale
-      pet.image = path.basename(optimizedImagePath); // Mettre à jour l'URL de l'image optimisée
+      // Supprimer l'image originale
+      fs.unlinkSync(originalImagePath);
+      pet.image = path.basename(optimizedImagePath); // Mettre à jour l'image optimisée
     }
 
+    // Sauvegarder les modifications dans la base de données
     const updatedPet = await pet.save();
-    res.status(200).json(updatedPet); // Retourner l'animal mis à jour
+    res.status(200).json(updatedPet);
   } catch (error) {
     console.error('Erreur lors de la mise à jour de l\'animal:', error);
-    res.status(500).json({ message: 'Erreur lors de la mise à jour de l\'animal' });
+    res.status(500).json({ message: 'Erreur lors de la mise à jour de l\'animal', error: error.message });
   }
 });
 
-// Route pour ajouter un poids à un animal
-router.put('/add-weight/:id', async (req, res) => {
-  const { id } = req.params; // ID de l'animal
-  const { date, weight } = req.body; // Date et poids envoyés dans la requête
 
+// Route pour ajouter un poids à un animal
+router.put('/add-weight/:id', authMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const { date, weight } = req.body; // Date et poids envoyés dans la requête
   try {
-    const pet = await Pet.findById(id); // Récupérer l'animal par son ID
+    const userId = req.auth.userId;
+    const pet = await Pet.findOne({ _id: id, user: userId }); // Récupérer l'animal par son ID
     if (!pet) {
       return res.status(404).json({ message: 'Animal non trouvé' });
     }
