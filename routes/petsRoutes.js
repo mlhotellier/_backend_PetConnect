@@ -7,6 +7,7 @@ const authMiddleware = require('../middleware/authMiddleware'); // Middleware d'
 const upload = require('../middleware/upload')
 const router = express.Router();
 
+// Helper : obtenir le chemin complet de l'image
 const getImagePath = (fileName) => path.join(__dirname, '../uploads/pets/optimized', fileName);
 
 // Route pour ajouter un animal
