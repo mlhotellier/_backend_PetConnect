@@ -252,4 +252,43 @@ router.put('/add-weight/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// Route pour supprimer un poids d'un animal
+router.put('/remove-weight/:id', authMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const { date, weight } = req.body; // Date et poids envoyés dans la requête
+  try {
+    const userId = req.auth.userId;
+
+    // Trouver l'animal par son ID et vérifier qu'il appartient à l'utilisateur
+    const pet = await Pet.findOne({ _id: id, user: userId });
+    if (!pet) {
+      return res.status(404).json({ message: 'Animal non trouvé' });
+    }
+
+    // Formater la date au format YYYY-MM-DD pour la comparer correctement
+    const formattedDate = new Date(date).toISOString().split('T')[0];
+
+    // Trouver l'entrée correspondante dans les données de l'animal
+    const weightToRemoveIndex = pet.data.findIndex(entry => 
+      new Date(entry.date).toISOString().split('T')[0] === formattedDate && entry.weight === parseFloat(weight)
+    );
+
+    // Si aucune entrée de poids ne correspond, retourner une erreur
+    if (weightToRemoveIndex === -1) {
+      return res.status(404).json({ message: 'Donnée de poids non trouvée' });
+    }
+
+    // Supprimer l'entrée trouvée dans le tableau 'data'
+    pet.data.splice(weightToRemoveIndex, 1);
+
+    // Sauvegarder les modifications dans la base de données
+    const updatedPet = await pet.save();
+    res.status(200).json({ message: 'Poids supprimé avec succès', updatedPet });
+  } catch (error) {
+    console.error('Erreur lors de la suppression du poids:', error);
+    res.status(500).json({ message: 'Erreur lors de la suppression du poids' });
+  }
+});
+
+
 module.exports = router;
