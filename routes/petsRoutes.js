@@ -4,14 +4,14 @@ const path = require('path');
 const fs = require('fs');
 const Pet = require('../models/Pet');
 const authMiddleware = require('../middleware/authMiddleware'); // Middleware d'authentification
-const upload = require('../middleware/upload')
+const { uploadPetImage } = require('../middleware/upload')
 const router = express.Router();
 
 // Helper : obtenir le chemin complet de l'image
 const getImagePath = (fileName) => path.join(__dirname, '../uploads/pets/optimized', fileName);
 
 // Route pour ajouter un animal
-router.post('/add', authMiddleware, upload.single('image'), async (req, res) => {
+router.post('/add', authMiddleware, uploadPetImage.single('image'), async (req, res) => {
   const { name, birthDate, type, color, weight } = req.body;
   
   // Vérifier si les informations sont présentes
@@ -124,9 +124,8 @@ router.delete('/remove/:id', authMiddleware, async (req, res) => {
   }
 });
 
-
 // Route pour mettre à jour un animal
-router.put('/update/:id', authMiddleware, upload.single('image'), async (req, res) => {
+router.put('/update/:id', authMiddleware, uploadPetImage.single('image'), async (req, res) => {
   const { id } = req.params;  // Récupérer l'ID du paramètre de la route
   const { name, birthDate, type, color, weight } = req.body;
 
@@ -205,7 +204,6 @@ router.put('/update/:id', authMiddleware, upload.single('image'), async (req, re
   }
 });
 
-
 // Route pour ajouter un poids à un animal
 router.put('/add-weight/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
@@ -252,7 +250,7 @@ router.put('/add-weight/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// Route pour supprimer un poids d'un animal
+// Route pour supprimer un poids à un animal
 router.put('/remove-weight/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
   const { date, weight } = req.body; // Date et poids envoyés dans la requête

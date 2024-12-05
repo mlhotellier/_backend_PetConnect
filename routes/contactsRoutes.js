@@ -1,6 +1,5 @@
 const express = require('express');
 const Contact = require('../models/Contact');
-const User = require('../models/User');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware'); // Middleware d'authentification
 
