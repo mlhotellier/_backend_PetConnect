@@ -149,23 +149,18 @@ router.put('/update/:id', authMiddleware, uploadPetImage.single('image'), async 
     const todayDate = today.toISOString().split('T')[0]; // Format YYYY-MM-DD
     const lastDataEntry = pet.data[pet.data.length - 1];
 
-    let dateChanged = false;
     let weightChanged = false;
 
     if (lastDataEntry) {
       const lastDataDate = new Date(lastDataEntry.date).toISOString().split('T')[0]; // Format YYYY-MM-DD
-
-      if (lastDataDate !== todayDate) {
-        dateChanged = true;
-      }
 
       if (parseFloat(weight) !== lastDataEntry.weight) {
         weightChanged = true;
       }
     }
 
-    // Si la date ou le poids a changé, on ajoute une nouvelle entrée
-    if (dateChanged || weightChanged) {
+    // Si le poids a changé, on ajoute une nouvelle entrée
+    if (weightChanged) {
       const newWeight = {
         date: todayDate,
         weight: parseFloat(weight),
