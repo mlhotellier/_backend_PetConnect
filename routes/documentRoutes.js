@@ -59,15 +59,47 @@ router.post('/add', authMiddleware, uploadDocument.single('document'), async (re
     }
 });
 
-// Route pour récupérer les documents
-router.get('/', async (req, res) => {
-    try {
-        const documents = await Document.find();
-        res.json({ documents });
-    } catch (error) {
-        console.error('Erreur lors de la récupération des documents:', error);
-        res.status(500).json({ message: 'Erreur serveur' });
-    }
+// Route pour récupérer les documents de l'utilisateur
+router.get('/', authMiddleware, async (req, res) => {
+  const userId = req.auth.userId; // ID utilisateur depuis le token (authMiddleware)
+
+  try {
+      // Récupérer uniquement les documents appartenant à l'utilisateur
+      const documents = await Document.find({ userId });
+
+      res.json({ documents });
+  } catch (error) {
+      console.error('Erreur lors de la récupération des documents:', error);
+      res.status(500).json({ message: 'Erreur serveur' });
+  }
 });
+
+// Route pour supprimer un document et son fichier
+router.delete('/delete/:documentId', authMiddleware, async (req, res) => {
+  const userId = req.auth.userId;
+  const documentId = req.params.documentId; // Assurez-vous que cet ID est correct
+
+  try {
+    const document = await Document.findOne({ _id: documentId, userId });
+
+    if (!document) {
+      return res.status(404).json({ message: 'Document non trouvé ou accès non autorisé' });
+    }
+
+    const filePath = path.join(__dirname, '../uploads/documents', userId, document.filename);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath); // Supprimer le fichier du répertoire
+    }
+
+    await Document.deleteOne({ _id: documentId }); // Supprimer du base de données
+
+    res.json({ message: 'Document supprimé avec succès.' });
+  } catch (error) {
+    console.error('Erreur lors de la suppression du document', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
 
 module.exports = router;
