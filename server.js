@@ -4,6 +4,8 @@ const authRoutes = require('./routes/authRoutes');
 const petsRoutes = require('./routes/petsRoutes');
 const contactsRoutes = require('./routes/contactsRoutes');
 const documentRoutes = require('./routes/documentRoutes');
+const evenementsRoutes = require('./routes/evenementsRoutes');
+
 const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
@@ -19,6 +21,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/pets', petsRoutes);
 app.use('/api/contacts', contactsRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/evenements', evenementsRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀Server started on port ${PORT}`));
