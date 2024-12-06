@@ -12,8 +12,10 @@ const storagePets = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const fileName = `pet_${Date.now()}${ext}`;
+    const originalname = file.originalname.replace(/\s+/g, '_'); // Remplacer les espaces par des underscores
+    const ext = path.extname(originalname); // Obtenir l'extension
+    const baseName = path.basename(originalname, ext); // Récupérer le nom sans extension
+    const fileName = `${Date.now()}_${baseName}${ext}`; // Ajouter la date avant le nom
     cb(null, fileName);
   }
 });
@@ -37,8 +39,10 @@ const storageDocuments = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const fileName = `document_${Date.now()}${ext}`;
+    const originalname = file.originalname.replace(/\s+/g, '_'); // Remplacer les espaces par des underscores
+    const ext = path.extname(originalname); // Obtenir l'extension
+    const baseName = path.basename(originalname, ext); // Récupérer le nom sans extension
+    const fileName = `${Date.now()}_${baseName}${ext}`; // Ajouter la date avant le nom
     cb(null, fileName);
   }
 });
