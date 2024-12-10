@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
 
 const evenementSchema = new mongoose.Schema({
-    name: { type: String, required: true },
+    title: { type: String, required: true },
     date: { type: Date, required: true },
-    description: { type: String, required: true },
+    petName: { type: String },
+    description: { type: String },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 });
 

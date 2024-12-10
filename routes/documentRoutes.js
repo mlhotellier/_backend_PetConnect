@@ -75,9 +75,9 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // Route pour supprimer un document et son fichier
-router.delete('/delete/:documentId', authMiddleware, async (req, res) => {
+router.delete('/delete/:id', authMiddleware, async (req, res) => {
   const userId = req.auth.userId;
-  const documentId = req.params.documentId; // Assurez-vous que cet ID est correct
+  const documentId = req.params.id; // Assurez-vous que cet ID est correct
 
   try {
     const document = await Document.findOne({ _id: documentId, userId });
