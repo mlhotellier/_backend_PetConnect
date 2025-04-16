@@ -1,6 +1,6 @@
-# My Pet Diary - Backend
+# PetConnect - Backend
 
-Bienvenue dans le backend de l'application **My Pet Diary**. Ce backend fournit les API nécessaires à la gestion des données des animaux de compagnie, des contacts vétérinaires, et plus encore. Il est construit avec **Node.js**, **Express**, et **MongoDB**.
+Bienvenue dans le backend de l'application **PetConnect**. Ce backend fournit les API nécessaires à la gestion des données des animaux de compagnie, des contacts vétérinaires, et plus encore. Il est construit avec **Node.js**, **Express**, et **MongoDB**.
 
 ## Table des matières
 - [Installation](#installation)
@@ -18,11 +18,11 @@ Bienvenue dans le backend de l'application **My Pet Diary**. Ce backend fournit 
 
 1. Clonez le projet depuis le dépôt Git :
    ```bash
-   git clone https://github.com/mlhotellier/_backend_my-pet-diary.git
+   git clone https://github.com/mlhotellier/_backend_PetConnect.git
    ```
 2. Accédez au dossier du projet :
     ```bash
-    cd _backend_my-pet-diary
+    cd _backend_PetConnect
     ```
 3. Installez les dépendances du projet :
     ```bash
@@ -32,7 +32,7 @@ Bienvenue dans le backend de l'application **My Pet Diary**. Ce backend fournit 
 Configurez vos variables d'environnement dans un fichier .env (voir la section Configuration ci-dessous).
 
 ## Configuration
-Avant de démarrer l'application, vous devez configurer certaines variables d'environnement. Créez un fichier .env à la racine de votre projet et ajoutez les variables nécessaires.
+Avant de démarrer l'application, vous devez configurer certaines variables d'environnement. Créez un fichier .env à la racine de votre projet et ajoutez les variables nécessaires. Vous devez au préalable créer votre base de données sur MongoDB (version gratuite disponible).
 
 Exemple de fichier .env :
 
@@ -42,6 +42,9 @@ MONGO_URI=mongodb+srv://<your-username>:<your-password>@<your-cluster-url>/<your
 
 # Clé secrète pour la génération de tokens JWT
 JWT_SECRET=your_jwt_secret_key
+
+# PORT de votre serveur
+PORT=<your-port-number>
 ```
 
 
