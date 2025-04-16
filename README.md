@@ -8,9 +8,9 @@ Bienvenue dans le backend de l'application **PetConnect**. Ce backend fournit le
 - [Démarrage du projet](#démarrage-du-projet)
 - [Structure des fichiers](#structure-des-fichiers)
 - [Technologies utilisées](#technologies-utilisées)
-- [API Endpoints](#api-endpoints)
-- [Contributeurs](#contributeurs)
+- [Contributions](#contributions)
 - [License](#license)
+- [Contact](#contact)
 
 ---
 
@@ -88,37 +88,11 @@ dotenv : Pour gérer les variables d'environnement.
 Bcrypt.js : Pour le hachage des mots de passe.
 Cors : Pour gérer les autorisations Cross-Origin.
 
-## API Endpoints
-Voici la liste des principales routes de l'API :
+## Contributions
+Les contributions à ce projet sont les bienvenues ! Si vous souhaitez contribuer, veuillez soumettre une pull request avec vos modifications proposées. Assurez-vous de suivre les bonnes pratiques de développement et de tester vos modifications avant de les soumettre.
 
-1. Authentification
-POST /api/auth/login : Authentifie un utilisateur et retourne un token JWT.
-Body : { "email": "user@example.com", "password": "yourpassword" }
-POST /api/auth/register : Enregistre un nouvel utilisateur.
-Body : { "name": "User", "email": "user@example.com", "password": "yourpassword" }
-2. Contacts
-GET /api/contacts : Récupère tous les contacts.
+## Licence
+Ce projet est sous licence MIT.
 
-Réponse : [ { "name": "Dr. Marie", "adress": "Address", "phone": "123456789", "mail": "email@domain.com" }, ... ]
-POST /api/contacts/add : Ajoute un nouveau contact.
-
-Body : { "name": "Dr. Marie", "adress": "Address", "phone": "123456789", "mail": "email@domain.com", "userId": "userId" }
-DELETE /api/contacts/remove/:id : Supprime un contact par son ID.
-
-Paramètres : id (ID du contact à supprimer)
-3. Pets
-GET /api/pets : Récupère tous les animaux.
-
-POST /api/pets/add : Ajoute un nouvel animal.
-
-Body : { "name": "Fido", "type": "Dog", "color": "Brown", "birthDate": "2020-01-01", "userId": "userId" }
-PUT /api/pets/update/:id : Met à jour les informations d'un animal.
-
-Paramètres : id (ID de l'animal à mettre à jour)
-Body : { "name": "Fido", "type": "Dog", "color": "Brown", "birthDate": "2020-01-01" }
-
-## Contributeurs
-Merci à tous les contributeurs qui participent à ce projet !
-
-## License
-Ce projet est sous License XYZ (modifiez selon la licence que vous utilisez).
+## Contact
+Pour toute question ou demande de renseignements, n'hésitez pas à me contacter par e-mail à l'adresse mathislhotellier@gmail.com.
